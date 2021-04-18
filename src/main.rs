@@ -1,15 +1,29 @@
-use std::env;
-
-use wallabag_api::types::{Config, EntriesFilter, SortBy, SortOrder};
+use clap::Clap;
+use config::{Config, File};
+use wallabag_api::types::{self, EntriesFilter, SortBy, SortOrder};
 use wallabag_api::Client;
 
+mod secrets;
+
+#[derive(Clap)]
+struct Opts {
+    config: String,
+}
+
 async fn run_example() {
-    let config = Config {
-        client_id: env::var("WALLABAG_CLIENT_ID").expect("WALLABAG_CLIENT_ID not set"),
-        client_secret: env::var("WALLABAG_CLIENT_SECRET").expect("WALLABAG_CLIENT_SECRET not set"),
-        username: env::var("WALLABAG_USERNAME").expect("WALLABAG_USERNAME not set"),
-        password: env::var("WALLABAG_PASSWORD").expect("WALLABAG_PASSWORD not set"),
-        base_url: env::var("WALLABAG_URL").expect("WALLABAG_URL not set"),
+    let opts: Opts = Opts::parse();
+    let mut settings = Config::default();
+    settings
+        .merge(File::with_name(opts.config.as_str()))
+        .unwrap();
+    let secrets = settings.try_into::<secrets::Secrets>().unwrap();
+
+    let config = types::Config {
+        client_id: secrets.client_id,
+        client_secret: secrets.client_secret,
+        username: secrets.username,
+        password: secrets.password,
+        base_url: secrets.base_url,
     };
 
     println!("{:#?}", config);
