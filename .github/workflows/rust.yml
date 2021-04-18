@@ -1,5 +1,7 @@
 on: [push, pull_request]
 
+name: rust
+
 jobs:
   check:
     runs-on: ubuntu-latest
