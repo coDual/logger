@@ -1,34 +1,22 @@
 use clap::Clap;
-use config::{Config, File};
-use wallabag_api::types::{self, EntriesFilter, SortBy, SortOrder};
+use std::convert::TryFrom;
+use std::error;
+use std::time::{SystemTime, UNIX_EPOCH};
+use wallabag_api::types::{EntriesFilter, SortBy, SortOrder};
 use wallabag_api::Client;
 
-mod secrets;
+mod settings;
+use settings::Settings;
 
 #[derive(Clap)]
 struct Opts {
     config: String,
 }
 
-async fn run_example() {
+async fn run_example() -> Result<(), Box<dyn error::Error>> {
     let opts: Opts = Opts::parse();
-    let mut settings = Config::default();
-    settings
-        .merge(File::with_name(opts.config.as_str()))
-        .unwrap();
-    let secrets = settings.try_into::<secrets::Secrets>().unwrap();
-
-    let config = types::Config {
-        client_id: secrets.client_id,
-        client_secret: secrets.client_secret,
-        username: secrets.username,
-        password: secrets.password,
-        base_url: secrets.base_url,
-    };
-
-    println!("{:#?}", config);
-
-    let mut client = Client::new(config);
+    let settings = Settings::from_file(&opts.config)?;
+    let mut client = Client::new(settings.wallabag.clone().into());
 
     // Only get starred entries
     let filter = EntriesFilter {
@@ -37,7 +25,7 @@ async fn run_example() {
         sort: SortBy::Created,
         order: SortOrder::Desc,
         tags: vec![],
-        since: 0,
+        since: settings.get_ts()?,
         public: None,
         per_page: None,
     };
@@ -59,8 +47,12 @@ async fn run_example() {
             }
         }
     }
+
+    let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+    settings.set_ts(i64::try_from(now)?)?;
+    Ok(())
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn error::Error>> {
     async_std::task::block_on(run_example())
 }
