@@ -39,7 +39,7 @@ async fn run_example() {
                 println!(
                     "{} | {} | Starred at {}",
                     entry.id,
-                    entry.title.unwrap_or("Untitled".to_owned()),
+                    entry.title.unwrap_or_else(|| "Untitled".to_owned()),
                     entry.starred_at.unwrap()
                 );
             }
