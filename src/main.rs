@@ -1,6 +1,6 @@
-use async_std::fs::OpenOptions;
-use async_std::prelude::*;
 use clap::Clap;
+use std::fs::OpenOptions;
+use std::io::Write;
 use std::{error, fmt::Display, path::Path};
 use wallabag_api::types::{EntriesFilter, Entry, SortBy, SortOrder};
 use wallabag_api::Client;
@@ -43,23 +43,18 @@ impl<'a> Display for Link<'a> {
 }
 
 // Print all starred Wallabag entries since last saved time.
-async fn store_all_entries(log_path: &Path, entries: &mut Vec<Entry>) -> Result<(), anyhow::Error> {
-    let mut file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .open(log_path)
-        .await?;
+async fn store_all_entries(log_path: &Path, entries: Vec<Entry>) -> Result<(), anyhow::Error> {
+    let mut file = OpenOptions::new().write(true).create(true).open(log_path)?;
 
     for entry in entries {
         writeln!(
             file,
             "- {}",
             Link {
-                title: entry.title.get_or_insert_with(String::default),
-                url: entry.url.get_or_insert_with(String::default),
+                title: &entry.title.unwrap_or_default(),
+                url: &entry.url.unwrap_or_default(),
             }
-        )
-        .await?;
+        )?;
     }
     Ok(())
 }
@@ -68,8 +63,8 @@ async fn store_all_entries(log_path: &Path, entries: &mut Vec<Entry>) -> Result<
 async fn main() -> Result<(), Box<dyn error::Error>> {
     let opts: Opts = Opts::parse();
     let settings = Settings::from_file(&opts.config)?;
-    let mut entries = get_starred_posts(&settings).await?;
-    store_all_entries(&settings.current_path(), &mut entries).await?;
+    let entries = get_starred_posts(&settings).await?;
+    store_all_entries(&settings.current_path(), entries).await?;
 
     // Only update timestamp if entries were updated
     Ok(settings.update_ts()?)

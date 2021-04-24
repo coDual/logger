@@ -1,5 +1,5 @@
 use anyhow::Result;
-use chrono::offset::Local;
+use chrono::{offset::Local, prelude::*};
 use config::{Config, File};
 use io::Write;
 use serde::Deserialize;
@@ -7,22 +7,7 @@ use std::fs::OpenOptions;
 use std::path::PathBuf;
 use std::{fs, io};
 
-#[derive(Debug, Deserialize)]
-enum Frequency {
-    Weekly,
-    Monthly,
-    Bimonthly,
-}
-
-impl Frequency {
-    fn prefix(&self) -> &'static str {
-        match self {
-            Frequency::Weekly => "w",
-            Frequency::Monthly => "m",
-            Frequency::Bimonthly => "b",
-        }
-    }
-}
+mod frequency;
 
 // Logger configuration.
 #[derive(Deserialize, Debug)]
@@ -33,7 +18,7 @@ pub struct Settings {
     // path to CoDual folder
     codual_path: String,
     // logging frequency
-    frequency: Frequency,
+    frequency: frequency::Frequency,
 }
 
 impl Settings {
@@ -61,12 +46,13 @@ impl Settings {
     }
 
     pub fn current_path(&self) -> PathBuf {
+        let today = Local::today();
+
         [
             &self.codual_path,
             "_log",
-            "2021",
-            &format!("{}{}", self.frequency.prefix(), 3),
-            "output.md",
+            &format!("{}", today.year()),
+            &frequency::get_filename(&self.frequency, today),
         ]
         .iter()
         .collect()
