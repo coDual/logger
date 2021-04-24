@@ -1,14 +1,11 @@
 use anyhow::Result;
+use chrono::offset::Local;
 use config::{Config, File};
 use io::Write;
 use serde::Deserialize;
-use std::convert::TryFrom;
+use std::fs::OpenOptions;
 use std::path::PathBuf;
 use std::{fs, io};
-use std::{
-    fs::OpenOptions,
-    time::{SystemTime, UNIX_EPOCH},
-};
 
 // Logger configuration.
 #[derive(Deserialize, Debug)]
@@ -41,8 +38,7 @@ impl Settings {
     }
 
     pub fn update_ts(&self) -> Result<()> {
-        let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
-        self.set_ts(i64::try_from(now)?)
+        self.set_ts(Local::now().timestamp())
     }
 }
 
