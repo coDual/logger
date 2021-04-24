@@ -1,7 +1,5 @@
 use clap::Clap;
-use std::convert::TryFrom;
 use std::error;
-use std::time::{SystemTime, UNIX_EPOCH};
 use wallabag_api::types::{EntriesFilter, Entry, SortBy, SortOrder};
 use wallabag_api::Client;
 
@@ -17,42 +15,40 @@ struct Opts {
 async fn get_starred_posts(settings: &Settings) -> Result<Vec<Entry>, anyhow::Error> {
     let mut client = Client::new(settings.wallabag.clone().into());
 
-    let entries = client
+    Ok(client
         .get_entries_with_filter(&EntriesFilter {
             archive: None,
             starred: Some(true),
             sort: SortBy::Created,
             order: SortOrder::Desc,
             tags: vec![],
-            since: settings.get_ts()?,
+            since: settings.ts()?,
             public: None,
             per_page: None,
         })
-        .await?;
-    let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
-    settings.set_ts(i64::try_from(now)?)?;
-    Ok(entries)
+        .await?)
 }
 
 // Print all starred Wallabag entries since last saved time.
-async fn print_all_entries(settings: &Settings) -> Result<(), Box<dyn error::Error>> {
-    let entries = get_starred_posts(&settings).await?;
-
+async fn print_all_entries(entries: &mut Vec<Entry>) {
     // do something with the entries!
     for entry in entries {
         println!(
             "{} | {} | Starred at {}",
             entry.id,
-            entry.title.unwrap_or_else(|| "Untitled".to_owned()),
+            entry.title.get_or_insert_with(|| "Untitled".to_owned()),
             entry.starred_at.unwrap()
         );
     }
-
-    Ok(())
 }
 
-fn main() -> Result<(), Box<dyn error::Error>> {
+#[async_std::main]
+async fn main() -> Result<(), Box<dyn error::Error>> {
     let opts: Opts = Opts::parse();
     let settings = Settings::from_file(&opts.config)?;
-    async_std::task::block_on(print_all_entries(&settings))
+    let mut entries = get_starred_posts(&settings).await?;
+    print_all_entries(&mut entries).await;
+
+    // Only update timestamp if entries were updated
+    Ok(settings.update_ts()?)
 }

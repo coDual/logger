@@ -2,16 +2,20 @@ use anyhow::Result;
 use config::{Config, File};
 use io::Write;
 use serde::Deserialize;
-use std::fs::OpenOptions;
+use std::convert::TryFrom;
 use std::path::PathBuf;
 use std::{fs, io};
+use std::{
+    fs::OpenOptions,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 // Logger configuration.
 #[derive(Deserialize, Debug)]
 pub struct Settings {
     pub wallabag: Wallabag,
     // path to timestamp file
-    pub timestamp_path: PathBuf,
+    timestamp_path: PathBuf,
     // path to CoDual folder
     pub codual_path: PathBuf,
 }
@@ -24,16 +28,21 @@ impl Settings {
         Ok(result)
     }
 
-    pub fn get_ts(&self) -> Result<i64> {
+    pub fn ts(&self) -> Result<i64> {
         let s = fs::read_to_string(self.timestamp_path.clone())?;
         let ts = s.parse()?;
         Ok(ts)
     }
 
-    pub fn set_ts(&self, ts: i64) -> Result<()> {
+    fn set_ts(&self, ts: i64) -> Result<()> {
         let mut file = OpenOptions::new().write(true).open(&self.timestamp_path)?;
         file.write_all(format!("{}", ts).as_bytes())?;
         Ok(())
+    }
+
+    pub fn update_ts(&self) -> Result<()> {
+        let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+        self.set_ts(i64::try_from(now)?)
     }
 }
 
