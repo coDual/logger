@@ -7,6 +7,23 @@ use std::fs::OpenOptions;
 use std::path::PathBuf;
 use std::{fs, io};
 
+#[derive(Debug, Deserialize)]
+enum Frequency {
+    Weekly,
+    Monthly,
+    Bimonthly,
+}
+
+impl Frequency {
+    fn prefix(&self) -> &'static str {
+        match self {
+            Frequency::Weekly => "w",
+            Frequency::Monthly => "m",
+            Frequency::Bimonthly => "b",
+        }
+    }
+}
+
 // Logger configuration.
 #[derive(Deserialize, Debug)]
 pub struct Settings {
@@ -14,7 +31,9 @@ pub struct Settings {
     // path to timestamp file
     timestamp_path: PathBuf,
     // path to CoDual folder
-    pub codual_path: PathBuf,
+    codual_path: String,
+    // logging frequency
+    frequency: Frequency,
 }
 
 impl Settings {
@@ -39,6 +58,18 @@ impl Settings {
 
     pub fn update_ts(&self) -> Result<()> {
         self.set_ts(Local::now().timestamp())
+    }
+
+    pub fn current_path(&self) -> PathBuf {
+        [
+            &self.codual_path,
+            "_log",
+            "2021",
+            &format!("{}{}", self.frequency.prefix(), 3),
+            "output.md",
+        ]
+        .iter()
+        .collect()
     }
 }
 

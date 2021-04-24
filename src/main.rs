@@ -1,5 +1,7 @@
+use async_std::fs::OpenOptions;
+use async_std::prelude::*;
 use clap::Clap;
-use std::error;
+use std::{error, fmt::Display, path::Path};
 use wallabag_api::types::{EntriesFilter, Entry, SortBy, SortOrder};
 use wallabag_api::Client;
 
@@ -29,17 +31,37 @@ async fn get_starred_posts(settings: &Settings) -> Result<Vec<Entry>, anyhow::Er
         .await?)
 }
 
-// Print all starred Wallabag entries since last saved time.
-async fn print_all_entries(entries: &mut Vec<Entry>) {
-    // do something with the entries!
-    for entry in entries {
-        println!(
-            "{} | {} | Starred at {}",
-            entry.id,
-            entry.title.get_or_insert_with(|| "Untitled".to_owned()),
-            entry.starred_at.unwrap()
-        );
+struct Link<'a> {
+    pub title: &'a str,
+    pub url: &'a str,
+}
+
+impl<'a> Display for Link<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{}]({})", self.title, self.url)
     }
+}
+
+// Print all starred Wallabag entries since last saved time.
+async fn store_all_entries(log_path: &Path, entries: &mut Vec<Entry>) -> Result<(), anyhow::Error> {
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .open(log_path)
+        .await?;
+
+    for entry in entries {
+        writeln!(
+            file,
+            "- {}",
+            Link {
+                title: entry.title.get_or_insert_with(String::default),
+                url: entry.url.get_or_insert_with(String::default),
+            }
+        )
+        .await?;
+    }
+    Ok(())
 }
 
 #[async_std::main]
@@ -47,7 +69,7 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
     let opts: Opts = Opts::parse();
     let settings = Settings::from_file(&opts.config)?;
     let mut entries = get_starred_posts(&settings).await?;
-    print_all_entries(&mut entries).await;
+    store_all_entries(&settings.current_path(), &mut entries).await?;
 
     // Only update timestamp if entries were updated
     Ok(settings.update_ts()?)
