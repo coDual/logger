@@ -1,11 +1,13 @@
 use anyhow::Result;
-use chrono::offset::Local;
+use chrono::{offset::Local, prelude::*};
 use config::{Config, File};
 use io::Write;
 use serde::Deserialize;
 use std::fs::OpenOptions;
 use std::path::PathBuf;
 use std::{fs, io};
+
+mod frequency;
 
 // Logger configuration.
 #[derive(Deserialize, Debug)]
@@ -14,7 +16,9 @@ pub struct Settings {
     // path to timestamp file
     timestamp_path: PathBuf,
     // path to CoDual folder
-    pub codual_path: PathBuf,
+    codual_path: String,
+    // logging frequency
+    frequency: frequency::Frequency,
 }
 
 impl Settings {
@@ -39,6 +43,19 @@ impl Settings {
 
     pub fn update_ts(&self) -> Result<()> {
         self.set_ts(Local::now().timestamp())
+    }
+
+    pub fn current_path(&self) -> PathBuf {
+        let today = Local::today();
+
+        [
+            &self.codual_path,
+            "_log",
+            &format!("{}", today.year()),
+            &frequency::get_filename(&self.frequency, today),
+        ]
+        .iter()
+        .collect()
     }
 }
 
