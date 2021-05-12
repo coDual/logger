@@ -16,3 +16,6 @@ Cargo.lock
 
 # Visual Studio files
 /.vscode/
+
+# Ignore test secrets file
+secrets.yaml
