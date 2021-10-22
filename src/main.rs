@@ -1,4 +1,4 @@
-use clap::Clap;
+use clap::Parser;
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::{error, fmt::Display, path::Path};
@@ -8,7 +8,7 @@ use wallabag_api::Client;
 mod settings;
 use settings::Settings;
 
-#[derive(Clap)]
+#[derive(Parser)]
 struct Opts {
     config: String,
 }
