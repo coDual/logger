@@ -7,8 +7,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.40"
-async-std = {version = "1.9.0", features = ["attributes"]}
+anyhow = "1.0.52"
+async-std = { version = "1.10.0", features = ["attributes"] }
 chrono = "0.4.19"
 clap = "3.0.0-beta.5"
 config = "0.11.0"
