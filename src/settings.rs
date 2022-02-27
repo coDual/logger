@@ -6,7 +6,6 @@ use serde::Deserialize;
 use std::fs::OpenOptions;
 use std::path::PathBuf;
 use std::{fs, io};
-
 mod frequency;
 
 // Logger configuration.
@@ -23,10 +22,10 @@ pub struct Settings {
 
 impl Settings {
     pub fn from_file(path: &str) -> Result<Settings> {
-        let mut settings = Config::default();
-        settings.merge(File::with_name(path))?;
-        let result = settings.try_into()?;
-        Ok(result)
+        Ok(Config::builder()
+            .add_source(File::with_name(path))
+            .build()?
+            .try_deserialize()?)
     }
 
     pub fn ts(&self) -> Result<i64> {
