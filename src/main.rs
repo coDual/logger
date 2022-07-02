@@ -11,7 +11,7 @@ use settings::Settings;
 #[derive(Parser)]
 struct Opts {
     /// Configuration file
-    #[clap(short, value_parser)]
+    #[clap(value_parser)]
     config: String,
 }
 
