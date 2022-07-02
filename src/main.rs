@@ -10,6 +10,8 @@ use settings::Settings;
 
 #[derive(Parser)]
 struct Opts {
+    /// Configuration file
+    #[clap(value_parser)]
     config: String,
 }
 
