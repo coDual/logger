@@ -45,7 +45,7 @@ impl Settings {
     }
 
     pub fn current_path(&self) -> PathBuf {
-        let today = Local::today();
+        let today = Local::now();
 
         [
             &self.codual_path,
