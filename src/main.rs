@@ -1,3 +1,4 @@
+use anyhow::{Context, Result};
 use clap::Parser;
 use std::fs::OpenOptions;
 use std::io::Write;
@@ -16,10 +17,10 @@ struct Opts {
 }
 
 // Get Wallabag starred posts.
-async fn get_starred_posts(settings: &Settings) -> Result<Vec<Entry>, anyhow::Error> {
+async fn get_starred_posts(settings: &Settings) -> Result<Vec<Entry>> {
     let mut client = Client::new(settings.wallabag.clone().into());
 
-    Ok(client
+    client
         .get_entries_with_filter(&EntriesFilter {
             archive: None,
             starred: Some(true),
@@ -30,7 +31,8 @@ async fn get_starred_posts(settings: &Settings) -> Result<Vec<Entry>, anyhow::Er
             public: None,
             per_page: None,
         })
-        .await?)
+        .await
+        .context("Failed to get Wallabag entries")
 }
 
 struct Link<'a> {
@@ -45,8 +47,12 @@ impl<'a> Display for Link<'a> {
 }
 
 // Print all starred Wallabag entries since last saved time.
-async fn store_all_entries(log_path: &Path, entries: Vec<Entry>) -> Result<(), anyhow::Error> {
-    let mut file = OpenOptions::new().write(true).create(true).open(log_path)?;
+async fn store_all_entries(log_path: &Path, entries: Vec<Entry>) -> Result<()> {
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .open(log_path)
+        .context(format!("Failed to open {0}", log_path.display()))?;
 
     for entry in entries {
         writeln!(
