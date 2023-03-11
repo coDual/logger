@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use chrono::{offset::Local, prelude::*};
 use config::{Config, File};
 use io::Write;
@@ -22,20 +22,34 @@ pub struct Settings {
 
 impl Settings {
     pub fn from_file(path: &str) -> Result<Settings> {
-        Ok(Config::builder()
+        Config::builder()
             .add_source(File::with_name(path))
-            .build()?
-            .try_deserialize()?)
+            .build()
+            .context(format!("Failed to build config from {path}"))?
+            .try_deserialize()
+            .context(format!("Failed to deserialize config from {path}"))
     }
 
     pub fn ts(&self) -> Result<i64> {
-        let s = fs::read_to_string(self.timestamp_path.clone())?;
-        let ts = s.parse()?;
+        let s = fs::read_to_string(self.timestamp_path.clone()).context(format!(
+            "Failed to read timestamp from {0}",
+            self.timestamp_path.display()
+        ))?;
+        let ts = s.parse().context(format!(
+            "Failed to parse timestamp from {0}",
+            self.timestamp_path.display()
+        ))?;
         Ok(ts)
     }
 
     fn set_ts(&self, ts: i64) -> Result<()> {
-        let mut file = OpenOptions::new().write(true).open(&self.timestamp_path)?;
+        let mut file = OpenOptions::new()
+            .write(true)
+            .open(&self.timestamp_path)
+            .context(format!(
+                "Failed to update timestamp in {0}",
+                self.timestamp_path.display()
+            ))?;
         file.write_all(format!("{}", ts).as_bytes())?;
         Ok(())
     }
@@ -45,7 +59,7 @@ impl Settings {
     }
 
     pub fn current_path(&self) -> PathBuf {
-        let today = Local::today();
+        let today = Local::now();
 
         [
             &self.codual_path,
