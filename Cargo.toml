@@ -13,4 +13,4 @@ chrono = "0.4.24"
 clap = { version = "4.2.1", features = ["derive"] }
 config = "0.13.3"
 serde = { version = "1.0.159", features = ["derive"] }
-wallabag-api = "0.4.1"
+wallabag-api = "0.4.2"
