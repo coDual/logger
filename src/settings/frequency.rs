@@ -34,7 +34,7 @@ mod tests {
     use chrono::prelude::*;
     #[test]
     fn test_get_filename() {
-        let date = Local.ymd(2021, 4, 24);
+        let date = NaiveDate::from_ymd_opt(2021, 4, 24).unwrap();
         assert_eq!(get_filename(&Frequency::Weekly, date), "w16.md");
         assert_eq!(get_filename(&Frequency::Monthly, date), "m04.md");
         assert_eq!(get_filename(&Frequency::Bimonthly, date), "b02.md");

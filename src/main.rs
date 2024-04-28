@@ -51,6 +51,7 @@ async fn store_all_entries(log_path: &Path, entries: Vec<Entry>) -> Result<()> {
     let mut file = OpenOptions::new()
         .write(true)
         .create(true)
+        .truncate(true)
         .open(log_path)
         .context(format!("Failed to open {0}", log_path.display()))?;
 
