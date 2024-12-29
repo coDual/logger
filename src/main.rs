@@ -40,7 +40,7 @@ struct Link<'a> {
     pub url: &'a str,
 }
 
-impl<'a> Display for Link<'a> {
+impl Display for Link<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[{}]({})", self.title, self.url)
     }
