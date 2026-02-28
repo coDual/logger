@@ -12,31 +12,35 @@ pub enum Frequency {
 impl Frequency {
     fn prefix(&self) -> &'static str {
         match self {
-            Frequency::Weekly => "w",
-            Frequency::Monthly => "m",
-            Frequency::Bimonthly => "b",
+            Self::Weekly => "w",
+            Self::Monthly => "m",
+            Self::Bimonthly => "b",
         }
     }
-}
 
-pub fn get_filename(frequency: &Frequency, date: impl Datelike) -> String {
-    let number = match frequency {
-        Frequency::Weekly => date.iso_week().week(),
-        Frequency::Monthly => date.month(),
-        Frequency::Bimonthly => date.month() / 2,
-    };
-    format!("{}{:02}.md", frequency.prefix(), number)
+    fn number(&self, date: &impl Datelike) -> u32 {
+        match self {
+            Self::Weekly => date.iso_week().week(),
+            Self::Monthly => date.month(),
+            Self::Bimonthly => date.month() / 2,
+        }
+    }
+
+    pub fn filename(&self, date: &impl Datelike) -> String {
+        format!("{}{:02}.md", self.prefix(), self.number(date))
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use chrono::prelude::*;
+
     #[test]
-    fn test_get_filename() {
+    fn test_filename() {
         let date = NaiveDate::from_ymd_opt(2021, 4, 24).unwrap();
-        assert_eq!(get_filename(&Frequency::Weekly, date), "w16.md");
-        assert_eq!(get_filename(&Frequency::Monthly, date), "m04.md");
-        assert_eq!(get_filename(&Frequency::Bimonthly, date), "b02.md");
+        assert_eq!(Frequency::Weekly.filename(&date), "w16.md");
+        assert_eq!(Frequency::Monthly.filename(&date), "m04.md");
+        assert_eq!(Frequency::Bimonthly.filename(&date), "b02.md");
     }
 }
