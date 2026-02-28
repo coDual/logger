@@ -1,13 +1,12 @@
 use anyhow::{Context, Result};
 use clap::Parser;
+use std::fmt::Display;
 use std::fs::OpenOptions;
 use std::io::Write;
-use std::{error, fmt::Display, path::Path};
-use wallabag_api::types::{EntriesFilter, Entry, SortBy, SortOrder};
-use wallabag_api::Client;
+use std::path::Path;
 
+mod karakeep;
 mod settings;
-use settings::Settings;
 
 #[derive(Parser)]
 struct Opts {
@@ -16,28 +15,9 @@ struct Opts {
     config: String,
 }
 
-// Get Wallabag starred posts.
-async fn get_starred_posts(settings: &Settings) -> Result<Vec<Entry>> {
-    let mut client = Client::new(settings.wallabag.clone().into());
-
-    client
-        .get_entries_with_filter(&EntriesFilter {
-            archive: None,
-            starred: Some(true),
-            sort: SortBy::Created,
-            order: SortOrder::Desc,
-            tags: vec![],
-            since: settings.ts()?,
-            public: None,
-            per_page: None,
-        })
-        .await
-        .context("Failed to get Wallabag entries")
-}
-
 struct Link<'a> {
-    pub title: &'a str,
-    pub url: &'a str,
+    title: &'a str,
+    url: &'a str,
 }
 
 impl Display for Link<'_> {
@@ -46,22 +26,21 @@ impl Display for Link<'_> {
     }
 }
 
-// Print all starred Wallabag entries since last saved time.
-async fn store_all_entries(log_path: &Path, entries: Vec<Entry>) -> Result<()> {
+fn store_all_entries(log_path: &Path, bookmarks: &[karakeep::Bookmark]) -> Result<()> {
     let mut file = OpenOptions::new()
         .write(true)
         .create(true)
         .truncate(true)
         .open(log_path)
-        .context(format!("Failed to open {0}", log_path.display()))?;
+        .context(format!("Failed to open {}", log_path.display()))?;
 
-    for entry in entries {
+    for bookmark in bookmarks {
         writeln!(
             file,
             "- {}",
             Link {
-                title: &entry.title.unwrap_or_default(),
-                url: &entry.url.unwrap_or_default(),
+                title: &bookmark.title,
+                url: &bookmark.url,
             }
         )?;
     }
@@ -69,12 +48,10 @@ async fn store_all_entries(log_path: &Path, entries: Vec<Entry>) -> Result<()> {
 }
 
 #[async_std::main]
-async fn main() -> Result<(), Box<dyn error::Error>> {
+async fn main() -> Result<()> {
     let opts: Opts = Opts::parse();
-    let settings = Settings::from_file(&opts.config)?;
-    let entries = get_starred_posts(&settings).await?;
-    store_all_entries(&settings.current_path(), entries).await?;
-
-    // Only update timestamp if entries were updated
-    Ok(settings.update_ts()?)
+    let settings = settings::Settings::from_file(&opts.config)?;
+    let bookmarks = karakeep::get_bookmarks(&settings.karakeep).await?;
+    store_all_entries(&settings.current_path(), &bookmarks)?;
+    Ok(())
 }

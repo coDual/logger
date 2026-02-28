@@ -7,14 +7,11 @@ This is the tool I use to create a first version of the [coDual log](https://cod
 ## Configuration format
 
 ```yaml
-timestamp_path: <path to timestamp file>
 codual_path: <path to codual/codual.github.io repo folder>
 frequency: weekly|monthly|bimonthly
-wallabag:
-    client_id: <Wallabag client ID>
-    client_secret: <Wallabag client secret>
-    username: <Wallabag username>
-    password: <Wallabag password>
-    base_url: <Wallabag instance URL, e.g. 'https://app.wallabag.it'>
+karakeep:
+    api_key: <Karakeep API key (generate in Settings > API Keys)>
+    base_url: <Karakeep instance URL, e.g. 'https://karakeep.example.com'>
+    list_id: <ID of the Karakeep list to fetch bookmarks from>
 
 ```
